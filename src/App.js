@@ -65,6 +65,20 @@ function App() {
 
   const activeCount = killersData.filter(k => k.isActive).length;
 
+  // Distribuye las cartas en filas tipo rombo/panal (5-6-7-7-7-6-5)
+  const rowPattern = [5, 6, 7, 7, 7, 6, 5];
+  const buildRows = (items) => {
+    const rows = [];
+    let i = 0;
+    for (const count of rowPattern) {
+      rows.push(items.slice(i, i + count));
+      i += count;
+    }
+    if (i < items.length) rows.push(items.slice(i));
+    return rows.filter(r => r.length > 0);
+  };
+  const killerRows = buildRows(killersData);
+
   const toggleKiller = (id) => {
     if (!isEditing) return;
     setKillersData(prevData =>
@@ -191,19 +205,23 @@ function App() {
 
       <main className="roulette-container">
         <div className="killer-grid">
-          {killersData.map((killer) => (
-            <div
-              key={killer.id}
-              onClick={() => toggleKiller(killer.id)}
-              className={`killer-card 
-                ${killer.id === activeId ? 'active' : ''} 
-                ${!killer.isActive ? 'disabled' : ''}
-                ${isEditing ? 'editable' : ''}
-              `}
-            >
-              <img src={killer.img} alt={killer.name} draggable="false" />
-              <span className="killer-name">{killer.name}</span>
-              {isEditing && !killer.isActive && <span className="disabled-mark">✕</span>}
+          {killerRows.map((row, rowIdx) => (
+            <div className="grid-row" key={rowIdx}>
+              {row.map((killer) => (
+                <div
+                  key={killer.id}
+                  onClick={() => toggleKiller(killer.id)}
+                  className={`killer-card 
+                    ${killer.id === activeId ? 'active' : ''} 
+                    ${!killer.isActive ? 'disabled' : ''}
+                    ${isEditing ? 'editable' : ''}
+                  `}
+                >
+                  <img src={killer.img} alt={killer.name} draggable="false" />
+                  <span className="killer-name">{killer.name}</span>
+                  {isEditing && !killer.isActive && <span className="disabled-mark">✕</span>}
+                </div>
+              ))}
             </div>
           ))}
         </div>
