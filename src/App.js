@@ -55,8 +55,10 @@ function App() {
   const [activeId, setActiveId] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [showReveal, setShowReveal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const spinInterval = useRef(null);
+  const revealTimeout = useRef(null);
   const audioRef = useRef(null);
 
   const isObsMode = new URLSearchParams(window.location.search).get('obs') === '1';
@@ -100,6 +102,7 @@ function App() {
 
     setIsSpinning(true);
     setWinner(null);
+    setShowReveal(false);
     setIsEditing(false);
     playGambling();
 
@@ -108,15 +111,28 @@ function App() {
     let delay = 50;
 
     const activeIds = availableKillers.map(k => k.id);
-    let currentIndex = 0;
+    let lastId = null;
+    let finalId = null;
 
     if (spinInterval.current) clearInterval(spinInterval.current);
+    if (revealTimeout.current) clearTimeout(revealTimeout.current);
+
+    const pickNext = () => {
+      if (activeIds.length === 1) return activeIds[0];
+      let next;
+      do {
+        next = activeIds[Math.floor(Math.random() * activeIds.length)];
+      } while (next === lastId);
+      return next;
+    };
 
     const jumpLight = () => {
       currentJump++;
 
-      setActiveId(activeIds[currentIndex]);
-      currentIndex = (currentIndex + 1) % activeIds.length;
+      const nextId = pickNext();
+      lastId = nextId;
+      finalId = nextId;
+      setActiveId(nextId);
 
       if (currentJump < totalJumps) {
         if (currentJump > totalJumps - 15) {
@@ -128,11 +144,10 @@ function App() {
       } else {
         setIsSpinning(false);
         stopGambling();
-        setActiveId((finalId) => {
-          const winningKiller = killersData.find(k => k.id === finalId);
-          setWinner(winningKiller);
-          return finalId;
-        });
+        const winningKiller = killersData.find(k => k.id === finalId);
+        setWinner(winningKiller);
+        setShowReveal(true);
+        revealTimeout.current = setTimeout(() => setShowReveal(false), 3400);
       }
     };
 
@@ -214,6 +229,19 @@ function App() {
           )}
         </div>
       </main>
+
+      {showReveal && winner && (
+        <div className="reveal-overlay" onClick={() => setShowReveal(false)}>
+          <div className="reveal-card">
+            <span className="reveal-label">KILLER SELECCIONADO</span>
+            <div className="reveal-portrait">
+              <img src={winner.img} alt={winner.name} draggable="false" />
+            </div>
+            <h1 className="reveal-name">{winner.name.toUpperCase()}</h1>
+            <span className="reveal-hint">Clic para cerrar</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
